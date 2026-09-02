@@ -1,4 +1,5 @@
-import { Film, Layers, Play, Quote } from 'lucide-react'
+import { useState } from 'react'
+import { Film, ImageOff, Layers, Play, Quote, Wand2 } from 'lucide-react'
 import type { WorkItem } from '@/pages/Works/useWorks'
 
 interface WkWorksGridProps {
@@ -25,6 +26,29 @@ function formatWorkTime(iso: string): string {
   if (diffMs < 86_400_000) return `${Math.floor(diffMs / 3_600_000)} 小時前`
   if (diffMs < 7 * 86_400_000) return `${Math.floor(diffMs / 86_400_000)} 天前`
   return `${d.getMonth() + 1}月${d.getDate()}日`
+}
+
+// 圖片載不出來時（作品來自過期的外部連結、或檔案已被清理）
+// 不要留一個破圖框，改成一個佔位圖示，卡片高度也才不會塌掉。
+function Thumb({ src, alt }: { src: string; alt: string }) {
+  const [failed, setFailed] = useState(false)
+  if (failed) {
+    return (
+      <div className="flex h-full w-full flex-col items-center justify-center gap-1.5 bg-muted">
+        <ImageOff className="h-8 w-8 text-muted-foreground/60" aria-hidden />
+        <span className="text-xs text-muted-foreground">圖片已失效</span>
+      </div>
+    )
+  }
+  return (
+    <img
+      src={src}
+      alt={alt}
+      loading="lazy"
+      onError={() => setFailed(true)}
+      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+    />
+  )
 }
 
 function SourceChip({ source }: { source: WorkItem['source'] }) {
@@ -60,18 +84,18 @@ export function WkWorksGrid({ items, onOpen }: WkWorksGridProps) {
             <div className="relative aspect-square w-full overflow-hidden bg-muted">
               {item.mediaUrl ? (
                 item.assetType === 'image' ? (
-                  <img
-                    src={item.mediaUrl}
-                    alt={item.title}
-                    loading="lazy"
-                    className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                  />
+                  <Thumb src={item.mediaUrl} alt={item.title} />
                 ) : (
                   <video src={item.mediaUrl} muted preload="metadata" className="h-full w-full object-cover" />
                 )
               ) : (
-                <div className="flex h-full w-full items-center justify-center bg-foreground/90">
-                  <Play className="h-10 w-10 text-primary-foreground/80" />
+                <div className="flex h-full w-full flex-col items-center justify-center gap-1.5 bg-muted">
+                  {item.assetType === 'video' ? (
+                    <Play className="h-8 w-8 text-muted-foreground/60" aria-hidden />
+                  ) : (
+                    <Wand2 className="h-8 w-8 text-muted-foreground/60" aria-hidden />
+                  )}
+                  <span className="text-xs text-muted-foreground">沒有預覽圖</span>
                 </div>
               )}
               {item.assetType === 'video' && item.mediaUrl && (

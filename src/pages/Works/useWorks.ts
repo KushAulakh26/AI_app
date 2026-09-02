@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { getPocketBaseUrl } from '@/lib/pb'
+import { isUsableMediaUrl, toAbsoluteUrl } from '@/lib/aigc'
 import { getLocalAccount, localAuthHeaders, onLocalAccountChange, type LocalAccount } from '@/lib/localAuth'
 import {
   classifyWorkKind,
@@ -95,13 +96,13 @@ function localToItem(w: LocalWork): WorkItem {
   } else if (kind === 'video') {
     if (isVideoShotWork(w)) {
       assetType = 'video'
-      mediaUrl = /^https?:\/\//.test(w.url || '') ? w.url : null
+      mediaUrl = isUsableMediaUrl(w.url) ? toAbsoluteUrl(w.url) : null
     } else {
       assetType = 'video_set'
       videoPayload = parseVideoSetPayload(w.url)
     }
   } else {
-    mediaUrl = /^https?:\/\//.test(w.url || '') ? w.url : null
+    mediaUrl = isUsableMediaUrl(w.url) ? toAbsoluteUrl(w.url) : null
   }
   return {
     workKey: `local-${w.id}`,
@@ -122,7 +123,29 @@ function localToItem(w: LocalWork): WorkItem {
 
 function pickMediaUrls(raw: unknown): string[] {
   if (!Array.isArray(raw)) return []
-  return raw.filter((u): u is string => typeof u === 'string' && /^https?:\/\//.test(u))
+  return raw.filter(isUsableMediaUrl).map(toAbsoluteUrl)
+}
+
+// 從 cloud_works.content 取出文案正文。content 可能是字串，也可能是
+// 被 PocketBase 解析過的物件（我們寫入的是整包 LocalWork）。
+function readCopyText(content: unknown): string {
+  if (typeof content === 'string') {
+    const trimmed = content.trim()
+    if (!trimmed.startsWith('{')) return content
+    try {
+      const parsed = JSON.parse(trimmed) as Record<string, unknown>
+      const t = parsed.text ?? parsed.content
+      return typeof t === 'string' ? t : ''
+    } catch {
+      return content
+    }
+  }
+  if (content && typeof content === 'object') {
+    const obj = content as Record<string, unknown>
+    const t = obj.text ?? obj.content
+    if (typeof t === 'string') return t
+  }
+  return ''
 }
 
 function rowToItem(row: CloudWorkRow): WorkItem {
@@ -135,7 +158,10 @@ function rowToItem(row: CloudWorkRow): WorkItem {
   let videoPayload: VideoSetWorkPayload | null = null
   if (kind === 'copy') {
     assetType = 'text'
-    textContent = typeof row.content === 'string' ? row.content : ''
+    // content 是 PocketBase 的 json 欄位：寫入的 JSON 字串會被解析成物件回來，
+    // 所以不能只認 string，否則文案卡片的正文永遠是空的。
+    // 兩種寫入來源都要吃：整包 LocalWork 物件（取 .text）與純字串。
+    textContent = readCopyText(row.content) || row.summary || ''
     mediaUrl = null
   } else if (kind === 'detail_set') {
     assetType = 'detail_set'

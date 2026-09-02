@@ -2,6 +2,7 @@
 // 僅存生成結果元信息（provider CDN URL），不存任何 token / 賬號憑證。
 
 import { pb, getPocketBaseUrl } from "./pb"
+import { isUsableMediaUrl } from "./aigc"
 
 function storageKey(): string {
   const uid = pb.authStore.isValid ? pb.authStore.record?.id : null
@@ -276,7 +277,7 @@ export function parseDetailPayload(raw: string): DetailWorkPayload | null {
       productName: typeof parsed.productName === 'string' ? parsed.productName : '',
       blocks,
       imageUrls: Array.isArray(parsed.imageUrls)
-        ? parsed.imageUrls.filter((u): u is string => typeof u === 'string' && /^https?:\/\//.test(u))
+        ? parsed.imageUrls.filter(isUsableMediaUrl)
         : [],
     }
   } catch {

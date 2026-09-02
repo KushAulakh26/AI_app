@@ -10,6 +10,7 @@ import {
   uploadAigcMedia,
   listAigcModels,
   downloadAigcResult,
+  isUsableMediaUrl,
 } from '@/lib/aigc'
 import type { AigcUsage, AigcModelInfo, AigcResult } from '@/lib/aigc'
 import { callLlmWithFallback, listLlmModels, LLM_PROVIDER_NOT_CONFIGURED } from '@/lib/llm'
@@ -229,7 +230,7 @@ function parsePayload(raw: string): VideoHistoryPayload {
     const videos = Array.isArray(parsed.videos)
       ? parsed.videos.filter(
           (v): v is VideoHistoryPayload['videos'][number] =>
-            !!v && typeof v.shotId === 'string' && /^https?:\/\//.test(v.url),
+            !!v && typeof v.shotId === 'string' && isUsableMediaUrl(v.url),
         )
       : []
     return {
@@ -885,7 +886,7 @@ export function useVideo() {
       localWorks
         .filter(
           w =>
-            /^https?:\/\//.test(w.url) &&
+            isUsableMediaUrl(w.url) &&
             !w.modelName.startsWith('llm:') &&
             !w.modelName.startsWith('detail:') &&
             !w.modelName.startsWith(VIDEO_LOCAL_PREFIX) &&

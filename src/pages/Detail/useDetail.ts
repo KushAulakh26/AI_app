@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, useRef } from 'react'
 import { callLlmWithFallback, listLlmModels, LLM_PROVIDER_NOT_CONFIGURED } from '@/lib/llm'
 import { applyPrefsToModels, loadPrefs } from '@/lib/modelPrefs'
+import { isUsableMediaUrl } from '@/lib/aigc'
 import type { LlmMessage, LlmModelInfo, LlmCallResult } from '@/lib/llm'
 import { useCostConfirm } from '@/hooks/useCostConfirm'
 import { loadLocalWorks,
@@ -112,7 +113,7 @@ function parseDetailPayload(raw: string): { blockTexts: HistoryDetailItem['block
         )
       : []
     const imageUrls = Array.isArray(parsed.imageUrls)
-      ? (parsed.imageUrls as unknown[]).filter((u): u is string => typeof u === 'string' && /^https?:\/\//.test(u))
+      ? (parsed.imageUrls as unknown[]).filter(isUsableMediaUrl)
       : []
     return { blockTexts, imageUrls }
   } catch {
@@ -208,7 +209,7 @@ export function useDetail() {
   async function runGeneration() {
     const modelName = selectedModel
     const nameSnapshot = productName.trim()
-    const imagesSnapshot = layoutImages.map(x => x.url).filter(u => /^https?:\/\//.test(u))
+    const imagesSnapshot = layoutImages.map(x => x.url).filter(isUsableMediaUrl)
     setDetailSlots(
       BLOCK_DEFS.map(d => ({
         blockId: d.blockId,
@@ -339,7 +340,7 @@ export function useDetail() {
           w =>
             !w.modelName.startsWith('llm:') &&
             !w.modelName.startsWith(DETAIL_LOCAL_PREFIX) &&
-            /^https?:\/\//.test(w.url),
+            isUsableMediaUrl(w.url),
         )
         .map(w => ({ imageId: w.id, url: w.url, sourceLabel: w.modeLabel })),
     [localWorks],

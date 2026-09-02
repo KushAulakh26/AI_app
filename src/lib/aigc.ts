@@ -1138,6 +1138,13 @@ export async function uploadRefImages(
 }
 
 // 相對路徑 → 當前 origin 絕對 URL（老代際導出, persistMediaUrl 依賴）。
+// 可用的媒體位址：外部 http(s) 連結，或我們自己落地後存的相對路徑。
+// 成品自 2026-09 起改存相對路徑（絕對網址會綁死當次隧道網域），
+// 所以任何「只認 http(s)」的判斷都會把自家成品整批丟掉。
+export function isUsableMediaUrl(u: unknown): u is string {
+  return typeof u === "string" && (/^https?:\/\//i.test(u) || u.startsWith("/api/files/"))
+}
+
 export function toAbsoluteUrl(path: string): string {
   if (!path) return path
   // 自家落地的成品一律走 /__pb 代理解析。
