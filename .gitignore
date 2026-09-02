@@ -34,11 +34,3 @@ bin/
 package-lock.json
 AUDIT_REPORT.md
 
-# Leftover scaffolding from the original export. Pending deletion from disk;
-# ignored meanwhile so it can never be published by an accidental `git add -A`.
-.vibex/
-.vibex-app-type
-.cursor/
-vibex-local/
-templates/
-plans/
