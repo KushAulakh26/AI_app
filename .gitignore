@@ -16,7 +16,6 @@ dist-ssr
 .env.local
 pocketbase/pb_data/
 pocketbase/*.db
-vibex-local/bin/
 pocketbase/logs/
 
 # Editor directories and files
@@ -30,12 +29,16 @@ pocketbase/logs/
 *.sln
 *.sw?
 
-# Vendor scaffolding from the original export - not part of this project
+# Local-only build inputs
+bin/
+package-lock.json
+AUDIT_REPORT.md
+
+# Leftover scaffolding from the original export. Pending deletion from disk;
+# ignored meanwhile so it can never be published by an accidental `git add -A`.
 .vibex/
 .vibex-app-type
 .cursor/
 vibex-local/
 templates/
 plans/
-bin/
-package-lock.json

@@ -1,17 +1,18 @@
 /// <reference path="../pb_data/types.d.ts" />
 // Delete generated provider files only after a retention window and only when no cloud work references them.
 
-function retentionDays() {
-  var days = parseInt(String($os.getenv("GENERATED_RETENTION_DAYS") || "30"), 10)
-  return days > 0 ? days : 30
-}
-
-function isReferenced(url, refs) {
-  for (var i = 0; i < refs.length; i++) if (String(refs[i] || "").indexOf(url) >= 0) return true
-  return false
-}
-
 cronAdd("generated-file-retention", "17 3 * * *", function () {
+  // cronAdd 的回調和 routerAdd 一樣是獨立作用域，看不到本檔案頂層的函數。
+  // 之前 engine_settings 就是踩了同一個坑（getAuthUserId is not defined），
+  // 所以輔助函數一律定義在回調內部。
+  function retentionDays() {
+    var days = parseInt(String($os.getenv("GENERATED_RETENTION_DAYS") || "30"), 10)
+    return days > 0 ? days : 30
+  }
+  function isReferenced(url, refs) {
+    for (var i = 0; i < refs.length; i++) if (String(refs[i] || "").indexOf(url) >= 0) return true
+    return false
+  }
   try {
     var cutoff = new Date(Date.now() - retentionDays() * 24 * 60 * 60 * 1000)
     var works = []
